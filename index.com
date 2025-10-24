@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Main Market Onitsha - Nigeria's Online Marketplace</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-analytics-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -59,19 +59,6 @@
             font-size: 14px;
             position: relative;
             overflow: hidden;
-        }
-
-        .top-notice::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-size: cover;
-            background-position: center;
-            opacity: 0.2;
-            transition: background-image 1s ease-in-out;
         }
 
         .top-notice .container {
@@ -998,21 +985,6 @@
             box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
         }
 
-        /* Lazy Loading Styles */
-        .lazy-load {
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
-        }
-
-        .lazy-load.loaded {
-            opacity: 1;
-        }
-
-        /* Loading spinner for buttons */
-        .fa-spinner {
-            animation: spin 1s linear infinite;
-        }
-
         /* Responsive Design */
         @media (max-width: 768px) {
             .header-top {
@@ -1769,8 +1741,6 @@
                     <i class="fas fa-sign-in-alt"></i> Login
                 </button>
                 
-                <div id="googleAuthLogin"></div>
-                
                 <p style="text-align: center; color: var(--text-color); opacity: 0.7; margin-top: 15px;">
                     Don't have an account? 
                     <a href="#" onclick="showRegisterForm()" style="color: var(--primary-color);">Register here</a>
@@ -1791,8 +1761,6 @@
                 <button class="btn btn-primary" onclick="registerUserWithLoading()" style="width: 100%; margin: 10px 0;" id="registerBtn">
                     <i class="fas fa-user-plus"></i> Create Account
                 </button>
-                
-                <div id="googleAuthRegister"></div>
                 
                 <p style="text-align: center; color: var(--text-color); opacity: 0.7;">
                     Already have an account? 
@@ -1926,7 +1894,7 @@
     </div>
 
     <script>
-        // Firebase Configuration - YOUR ACTUAL CONFIG
+        // ==================== FIREBASE CONFIGURATION ====================
         const firebaseConfig = {
             apiKey: "AIzaSyB_0nl4fJLq6XXB2LGR-0x_BNaeJlpHKvE",
             authDomain: "mainmarketo.firebaseapp.com",
@@ -1937,123 +1905,41 @@
             measurementId: "G-8D0Q1HFR2Z"
         };
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-        const storage = firebase.storage();
-        const analytics = firebase.analytics();
-
-        // ==================== ENHANCED SELLER VIDEO CALL SYSTEM ====================
-        class SellerVideoSystem {
-            constructor() {
-                this.init();
-            }
-
-            init() {
-                console.log('🎥 Seller Video System Initialized');
-                this.enhanceProductDisplay();
-            }
-
-            // Enhance product display with seller contact info
-            enhanceProductDisplay() {
-                // This will be called when products are loaded
-                console.log('Enhanced product display with seller contact info');
-            }
-
-            // Enhanced WhatsApp video call function
-            startSellerVideoCall(sellerPhone, productName, productPrice, productId) {
-                if (!currentUser) {
-                    showAuthModal();
-                    showToast('Please login to start video call with seller');
-                    return;
-                }
-                
-                const cleanPhone = sellerPhone.replace(/\s+/g, '').replace('+', '');
-                const userMessage = `Hello! I saw your product "${productName}" for ₦${productPrice?.toLocaleString() || '0'} on Main Market Onitsha. 
-
-I'm interested in buying it. Can we do a WhatsApp video call so I can see the product live before purchasing?
-
-Please let me know when you're available for a video call. Thank you!`;
-
-                const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(userMessage)}`;
-                
-                window.open(whatsappUrl, '_blank');
-                showToast('Opening WhatsApp to request video call with seller...');
-                
-                this.logVideoCallRequest(productId, sellerPhone, productName);
-            }
-
-            logVideoCallRequest(productId, sellerPhone, productName) {
-                if (!currentUser) return;
-                
-                const videoCallData = {
-                    userId: currentUser.uid,
-                    userEmail: currentUser.email,
-                    productId: productId,
-                    productName: productName,
-                    sellerPhone: sellerPhone,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-                    type: 'video_call_request'
-                };
-                
-                db.collection("videoCallRequests").add(videoCallData).catch(console.error);
-            }
-
-            // Enhanced seller registration
-            async registerSellerWithPhone(sellerData) {
-                try {
-                    showLoadingPopup('Setting up your seller account...');
-
-                    const sellerInfo = {
-                        name: sellerData.name,
-                        phone: sellerData.phone, // Seller's WhatsApp number
-                        email: sellerData.email,
-                        businessName: sellerData.businessName,
-                        isSeller: true,
-                        sellerSince: firebase.firestore.FieldValue.serverTimestamp(),
-                        videoCallEnabled: true,
-                        status: 'active'
-                    };
-
-                    await db.collection("users").doc(currentUser.uid).update(sellerInfo);
-                    
-                    hideLoadingPopup();
-                    showToast('🎉 Seller account activated! Buyers will now call YOUR number');
-                    return true;
-                    
-                } catch (error) {
-                    hideLoadingPopup();
-                    showToast('Error activating seller account: ' + error.message, 'error');
-                    return false;
-                }
-            }
+        // Initialize Firebase with error handling for GitHub Pages
+        let auth, db, storage;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            auth = firebase.auth();
+            db = firebase.firestore();
+            storage = firebase.storage();
+            console.log('🔥 Firebase initialized successfully');
+        } catch (error) {
+            console.log('⚠️ Firebase initialization failed - running in demo mode');
+            // Create mock Firebase objects to prevent errors
+            auth = { onAuthStateChanged: () => {} };
+            db = { collection: () => ({ add: () => Promise.resolve(), get: () => Promise.resolve({ exists: false }) }) };
+            storage = { ref: () => ({ child: () => ({ put: () => Promise.resolve() }) }) };
         }
 
-        // Initialize the seller video system
-        const sellerVideoSystem = new SellerVideoSystem();
-
-        // ==================== ORIGINAL APPLICATION CODE ====================
+        // ==================== YOUR COMPLETE JAVASCRIPT CODE ====================
         // Image rotation array
         const marketImages = [
             'https://images.unsplash.com/photo-1759807823668-47046433ab61?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
             'https://thumbs.dreamstime.com/b/african-women-shopping-food-stuff-local-market-paying-doing-mobile-transfer-via-phone-trader-african-woman-166608929.jpg'
         ];
 
-        // Sample products data - NOW WITH SELLER PHONE NUMBERS
+        // Sample products data
         const sampleProducts = [
             {
                 id: 1,
                 name: "Men's African Print Shirt - Premium Quality",
                 price: 4500,
                 images: [
-                    "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-                    "https://images.unsplash.com/photo-1503341504253-dff4815485f1?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-                    "https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
+                    "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
                 ],
                 badge: "BESTSELLER",
                 category: "fashion",
-                sellerPhone: "+2348064562826", // Seller 1
+                sellerPhone: "+2348064562826",
                 sellerName: "Fashion Store NG"
             },
             {
@@ -2061,12 +1947,11 @@ Please let me know when you're available for a video call. Thank you!`;
                 name: "Wireless Bluetooth Headphones",
                 price: 8500,
                 images: [
-                    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-                    "https://images.unsplash.com/photo-1484704849700-f032a568e944?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
+                    "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
                 ],
                 badge: "HOT",
                 category: "electronics",
-                sellerPhone: "+2348064562826", // Seller 1
+                sellerPhone: "+2348064562826",
                 sellerName: "Tech Gadgets Ltd"
             },
             {
@@ -2078,7 +1963,7 @@ Please let me know when you're available for a video call. Thank you!`;
                 ],
                 badge: "NEW",
                 category: "fashion",
-                sellerPhone: "+2347070752053", // Seller 2
+                sellerPhone: "+2347070752053",
                 sellerName: "African Fashion Hub"
             },
             {
@@ -2090,7 +1975,7 @@ Please let me know when you're available for a video call. Thank you!`;
                 ],
                 badge: "TRENDING",
                 category: "electronics",
-                sellerPhone: "+2348064562826", // Seller 1
+                sellerPhone: "+2348064562826",
                 sellerName: "Mobile World"
             }
         ];
@@ -2105,7 +1990,7 @@ Please let me know when you're available for a video call. Thank you!`;
                 ],
                 badge: "FRESH",
                 category: "food",
-                sellerPhone: "+2348064562826", // Seller 1
+                sellerPhone: "+2348064562826",
                 sellerName: "Oshe Market Foods"
             },
             {
@@ -2117,25 +2002,8 @@ Please let me know when you're available for a video call. Thank you!`;
                 ],
                 badge: "LOCAL",
                 category: "food",
-                sellerPhone: "+2347070752053", // Seller 2
+                sellerPhone: "+2347070752053",
                 sellerName: "Farm Fresh NG"
-            }
-        ];
-
-        const errandBoys = [
-            {
-                id: 1,
-                name: "Chinedu Okoro",
-                phone: "+2348064562826",
-                image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-                rating: "4.8"
-            },
-            {
-                id: 2,
-                name: "Emeka Nwankwo",
-                phone: "+2347070752053",
-                image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80",
-                rating: "4.9"
             }
         ];
 
@@ -2145,8 +2013,6 @@ Please let me know when you're available for a video call. Thank you!`;
         let currentImageIndex = 0;
         let imageRotationInterval;
         let isSeller = false;
-        let wishlist = [];
-        let orders = [];
         let allProducts = [...sampleProducts, ...foodProducts];
         
         // Image Gallery Variables
@@ -2157,15 +2023,11 @@ Please let me know when you're available for a video call. Thank you!`;
         document.addEventListener('DOMContentLoaded', function() {
             loadProducts();
             loadFoodProducts();
-            loadErrandBoys();
             updateCartCount();
             startImageRotation();
             initializeDarkMode();
             initializeAuth();
-            loadWishlist();
-            loadOrders();
             setupOfflineDetection();
-            initializeGoogleAuth();
         });
 
         // Setup offline detection
@@ -2200,15 +2062,10 @@ Please let me know when you're available for a video call. Thank you!`;
                             isSeller = doc.data().isSeller || false;
                         }
                     });
-                    loadWishlist();
-                    loadOrders();
-                    loadProfile();
                 } else {
                     currentUser = null;
                     document.getElementById('userStatus').textContent = 'Account';
                     isSeller = false;
-                    wishlist = [];
-                    orders = [];
                 }
             });
         }
@@ -2263,24 +2120,10 @@ Please let me know when you're available for a video call. Thank you!`;
                 page.classList.remove('active');
             });
             document.getElementById(pageId).classList.add('active');
-            
-            // Update navigation active state
-            document.querySelectorAll('.nav-links a').forEach(link => {
-                link.classList.remove('active');
-            });
-            
-            // Set active state for current page
-            const currentLink = Array.from(document.querySelectorAll('.nav-links a')).find(link => 
-                link.getAttribute('onclick')?.includes(pageId)
-            );
-            if (currentLink) {
-                currentLink.classList.add('active');
-            }
         }
 
         function showCategory(category) {
             showPage('homePage');
-            // Filter products by category
             const filteredProducts = category === 'all' ? allProducts : allProducts.filter(product => product.category === category);
             displayProducts(filteredProducts, 'productsGrid');
         }
@@ -2300,11 +2143,6 @@ Please let me know when you're available for a video call. Thank you!`;
                 <div class="product-card">
                     <div class="product-image" onclick="openImageGallery(${product.id})">
                         <img src="${product.images[0]}" alt="${product.name}">
-                        ${product.images.length > 1 ? `
-                            <div class="image-count-badge">
-                                <i class="fas fa-images"></i> ${product.images.length}
-                            </div>
-                        ` : ''}
                         ${product.badge ? `<div class="product-badge">${product.badge}</div>` : ''}
                     </div>
                     <div class="product-info">
@@ -2318,7 +2156,7 @@ Please let me know when you're available for a video call. Thank you!`;
                             <button class="add-to-cart" onclick="addToCart(${product.id})">
                                 <i class="fas fa-cart-plus"></i> Add to Cart
                             </button>
-                            <button class="btn btn-outline" onclick="sellerVideoSystem.startSellerVideoCall('${product.sellerPhone}', '${product.name}', ${product.price}, ${product.id})">
+                            <button class="btn btn-outline" onclick="startSellerVideoCall('${product.sellerPhone}', '${product.name}', ${product.price}, ${product.id})">
                                 <i class="fab fa-whatsapp"></i> Video Call ${product.sellerName}
                             </button>
                         </div>
@@ -2435,6 +2273,40 @@ Please let me know when you're available for a video call. Thank you!`;
             showToast('Product removed from cart');
         }
 
+        // SELLER VIDEO CALL SYSTEM
+        function startSellerVideoCall(sellerPhone, productName, productPrice, productId) {
+            if (!currentUser) {
+                showAuthModal();
+                showToast('Please login to start video call with seller');
+                return;
+            }
+            
+            const cleanPhone = sellerPhone.replace(/\s+/g, '').replace('+', '');
+            const userMessage = `Hello! I saw your product "${productName}" for ₦${productPrice?.toLocaleString() || '0'} on Main Market Onitsha. 
+
+I'm interested in buying it. Can we do a WhatsApp video call so I can see the product live before purchasing?
+
+Please let me know when you're available for a video call. Thank you!`;
+
+            const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(userMessage)}`;
+            
+            window.open(whatsappUrl, '_blank');
+            showToast('Opening WhatsApp to request video call with seller...');
+            
+            // Log to Firebase if available
+            try {
+                db.collection("videoCallRequests").add({
+                    userId: currentUser?.uid || 'demo',
+                    productName: productName,
+                    sellerPhone: sellerPhone,
+                    timestamp: new Date(),
+                    type: 'video_call_request'
+                });
+            } catch (error) {
+                console.log('Firebase logging failed - normal for demo');
+            }
+        }
+
         // Authentication Functions
         function showAuthModal() {
             document.getElementById('authModal').style.display = 'flex';
@@ -2501,7 +2373,7 @@ Please let me know when you're available for a video call. Thank you!`;
                         phone: phone,
                         email: email,
                         isSeller: becomeSeller,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        createdAt: new Date()
                     });
                 })
                 .then(() => {
@@ -2517,288 +2389,6 @@ Please let me know when you're available for a video call. Thank you!`;
                     hideLoadingPopup();
                     showToast('Registration failed: ' + error.message, 'error');
                 });
-        }
-
-        // Seller Image Upload System
-        function previewImage(imageNumber) {
-            const fileInput = document.getElementById(`productImage${imageNumber}`);
-            const file = fileInput.files[0];
-            const previewsContainer = document.getElementById('imagePreviews');
-            
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    // Create or update preview
-                    let preview = document.getElementById(`preview${imageNumber}`);
-                    if (!preview) {
-                        preview = document.createElement('div');
-                        preview.className = 'image-preview';
-                        preview.id = `preview${imageNumber}`;
-                        preview.innerHTML = `
-                            <img src="${e.target.result}" alt="Preview ${imageNumber}">
-                            <button type="button" class="remove-image" onclick="removeImage(${imageNumber})">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        `;
-                        previewsContainer.appendChild(preview);
-                    } else {
-                        preview.querySelector('img').src = e.target.result;
-                    }
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function removeImage(imageNumber) {
-            const fileInput = document.getElementById(`productImage${imageNumber}`);
-            const preview = document.getElementById(`preview${imageNumber}`);
-            
-            fileInput.value = '';
-            if (preview) {
-                preview.remove();
-            }
-        }
-
-        async function uploadProduct() {
-            if (!currentUser || !isSeller) {
-                showToast('Please register as a seller first', 'error');
-                return;
-            }
-
-            const name = document.getElementById('productName').value.trim();
-            const price = document.getElementById('productPrice').value;
-            const description = document.getElementById('productDescription').value.trim();
-            const category = document.getElementById('productCategory').value;
-
-            if (!name || !price || !description) {
-                showToast('Please fill all required fields', 'error');
-                return;
-            }
-
-            showLoadingPopup('Uploading your product...');
-
-            try {
-                // Get seller's phone number from their profile
-                const userDoc = await db.collection("users").doc(currentUser.uid).get();
-                const sellerPhone = userDoc.data()?.phone || "+2348064562826";
-                const sellerName = userDoc.data()?.name || "Seller";
-
-                const productData = {
-                    name: name,
-                    price: parseInt(price),
-                    description: description,
-                    category: category,
-                    images: [getSimplePlaceholder()], // Placeholder image
-                    sellerId: currentUser.uid,
-                    sellerEmail: currentUser.email,
-                    sellerName: sellerName,
-                    sellerPhone: sellerPhone, // Seller's actual WhatsApp number
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    status: 'active'
-                };
-
-                const docRef = await db.collection("products").add(productData);
-                
-                hideLoadingPopup();
-                showToast('✅ Product uploaded successfully! Buyers will call YOUR number: ' + sellerPhone);
-                
-                sendNewProductNotification(productData, docRef.id);
-                resetProductForm();
-                loadSellerProducts();
-                
-            } catch (error) {
-                hideLoadingPopup();
-                console.error('Product upload error:', error);
-                showToast('Error uploading product: ' + error.message, 'error');
-            }
-        }
-
-        function getSimplePlaceholder() {
-            return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPlByb2R1Y3QgSW1hZ2U8L3RleHQ+PC9zdmc+';
-        }
-
-        function resetProductForm() {
-            document.getElementById('productName').value = '';
-            document.getElementById('productPrice').value = '';
-            document.getElementById('productDescription').value = '';
-            document.getElementById('imagePreviews').innerHTML = '';
-            
-            // Reset file inputs
-            for (let i = 1; i <= 3; i++) {
-                document.getElementById(`productImage${i}`).value = '';
-            }
-        }
-
-        // Seller Management
-        function handleSellerClick() {
-            if (!currentUser) {
-                showAuthModal();
-                showRegisterForm();
-                document.getElementById('becomeSeller').checked = true;
-                showToast('Please register to become a seller');
-                return;
-            }
-            
-            db.collection("users").doc(currentUser.uid).get().then((doc) => {
-                if (doc.exists && doc.data().isSeller) {
-                    isSeller = true;
-                    showPage('sellerDashboard');
-                    loadSellerProducts();
-                } else {
-                    showSellerUpgradeModal();
-                }
-            }).catch(() => {
-                showSellerUpgradeModal();
-            });
-        }
-
-        function showSellerUpgradeModal() {
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            modal.style.display = 'flex';
-            modal.id = 'sellerUpgradeModal';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <span class="close-modal" onclick="closeSellerUpgradeModal()">&times;</span>
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--primary-color), #c53030); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; color: white; font-size: 32px;">
-                            <i class="fas fa-store"></i>
-                        </div>
-                        <h3 style="color: var(--text-color); margin-bottom: 10px;">Become a Verified Seller</h3>
-                        <p style="color: var(--text-color); opacity: 0.7;">Start selling to thousands of buyers today!</p>
-                    </div>
-
-                    <div style="background: var(--footer-bg); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                        <h5 style="margin-bottom: 15px; color: var(--text-color); text-align: center;">Seller Benefits:</h5>
-                        <div style="display: grid; gap: 10px;">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-check-circle" style="color: #28a745;"></i>
-                                <span style="color: var(--text-color); font-size: 14px;">Upload unlimited products</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-check-circle" style="color: #28a745;"></i>
-                                <span style="color: var(--text-color); font-size: 14px;">WhatsApp order notifications</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-check-circle" style="color: #28a745;"></i>
-                                <span style="color: var(--text-color); font-size: 14px;">Video call with buyers</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-check-circle" style="color: #28a745;"></i>
-                                <span style="color: var(--text-color); font-size: 14px;">Secure payment processing</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-check-circle" style="color: #28a745;"></i>
-                                <span style="color: var(--text-color); font-size: 14px;">24/7 marketplace access</span>
-                            </div>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-check-circle" style="color: #28a745;"></i>
-                                <span style="color: var(--text-color); font-size: 14px;">Completely FREE to start</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="text-align: center; background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #25D366;">
-                        <h5 style="color: #25D366; margin-bottom: 8px;">📞 Important Note:</h5>
-                        <p style="color: var(--text-color); font-size: 13px; margin: 0;">
-                            Buyers will video call <strong>YOUR WhatsApp number</strong> directly to see your products. 
-                            Make sure your number is correct!
-                        </p>
-                    </div>
-
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-outline" onclick="closeSellerUpgradeModal()" style="flex: 1; padding: 12px;">
-                            Maybe Later
-                        </button>
-                        <button class="btn btn-primary" onclick="upgradeToSeller()" style="flex: 1; padding: 12px; background: linear-gradient(135deg, var(--primary-color), #c53030);">
-                            <i class="fas fa-check"></i> Become Seller Now
-                        </button>
-                    </div>
-                    
-                    <div style="text-align: center; margin-top: 15px;">
-                        <p style="color: var(--text-color); opacity: 0.7; font-size: 12px;">
-                            <i class="fas fa-lock"></i> Your information is secure
-                        </p>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-
-        function closeSellerUpgradeModal() {
-            const modal = document.getElementById('sellerUpgradeModal');
-            if (modal) {
-                modal.remove();
-            }
-        }
-
-        function upgradeToSeller() {
-            if (!currentUser) return;
-
-            showLoadingPopup('Setting up your seller account...');
-
-            db.collection("users").doc(currentUser.uid).update({
-                isSeller: true,
-                sellerSince: firebase.firestore.FieldValue.serverTimestamp(),
-                videoCallEnabled: true
-            }).then(() => {
-                hideLoadingPopup();
-                isSeller = true;
-                closeSellerUpgradeModal();
-                showToast('🎉 Seller account activated! Buyers will now call YOUR number');
-                showPage('sellerDashboard');
-                loadSellerProducts();
-            }).catch((error) => {
-                hideLoadingPopup();
-                showToast('Error activating seller account: ' + error.message, 'error');
-            });
-        }
-
-        function loadSellerProducts() {
-            if (!currentUser || !isSeller) return;
-            
-            const sellerProductsGrid = document.getElementById('sellerProductsGrid');
-            sellerProductsGrid.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-color); opacity: 0.7;">Loading your products...</div>';
-            
-            // For demo, show sample products. In production, load from Firestore
-            setTimeout(() => {
-                sellerProductsGrid.innerHTML = sampleProducts.map(product => `
-                    <div class="product-card">
-                        <div class="product-image" onclick="openImageGallery(${product.id})">
-                            <img src="${product.images[0]}" alt="${product.name}">
-                            ${product.images.length > 1 ? `
-                                <div class="image-count-badge">
-                                    <i class="fas fa-images"></i> ${product.images.length}
-                                </div>
-                            ` : ''}
-                        </div>
-                        <div class="product-info">
-                            <h3 class="product-title">${product.name}</h3>
-                            <div class="product-price">₦${product.price.toLocaleString()}</div>
-                            <div class="seller-contact">
-                                <strong>Buyers will call:</strong><br>
-                                <small>📞 ${product.sellerPhone}</small>
-                            </div>
-                            <div style="display: flex; gap: 5px; margin-top: 10px;">
-                                <button class="add-to-cart" style="background: #ffc107; color: black; flex: 1;">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button class="add-to-cart" onclick="deleteProduct(${product.id})" style="background: #dc3545; flex: 1;">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            }, 1000);
-        }
-
-        function deleteProduct(productId) {
-            if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
-                return;
-            }
-            showToast('Product deleted successfully!');
-            loadSellerProducts();
         }
 
         // Modal Functions
@@ -2859,7 +2449,6 @@ Please let me know when you're available for a video call. Thank you!`;
                 return;
             }
             
-            // Simple admin check - in production, use proper admin validation
             const isAdmin = currentUser.email === 'godwindouglas8@gmail.com';
             
             if (isAdmin) {
@@ -2913,70 +2502,6 @@ Please let me know when you're available for a video call. Thank you!`;
             }, 2000);
         }
 
-        // Data Loading Functions
-        function loadWishlist() {
-            // Implementation for wishlist
-        }
-
-        function loadOrders() {
-            // Implementation for orders
-        }
-
-        function loadProfile() {
-            // Implementation for profile
-        }
-
-        function loadAdminOrders() {
-            // Implementation for admin orders
-            document.getElementById('totalOrders').textContent = '15';
-            document.getElementById('todayOrders').textContent = '3';
-            document.getElementById('pendingOrders').textContent = '2';
-            document.getElementById('totalRevenue').textContent = '₦125,400';
-        }
-
-        function loadErrandBoys() {
-            const container = document.getElementById('errandBoysGrid');
-            container.innerHTML = errandBoys.map(boy => `
-                <div style="background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid var(--border-color);">
-                    <div style="display: flex; gap: 15px; align-items: center;">
-                        <img src="${boy.image}" alt="${boy.name}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
-                        <div style="flex: 1;">
-                            <div style="font-weight: bold;">${boy.name}</div>
-                            <div style="color: var(--text-color); opacity: 0.7; font-size: 12px;">⭐ ${boy.rating} Rating</div>
-                            <div style="color: var(--text-color); opacity: 0.7; font-size: 12px;">📞 ${boy.phone}</div>
-                        </div>
-                        <button class="btn btn-primary" onclick="bookErrandBoy('${boy.phone}', '${boy.name}')" style="padding: 8px 15px; font-size: 12px;">
-                            <i class="fas fa-calendar-check"></i> Book
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function bookErrandBoy(phone, name) {
-            const message = `Hello! I would like to book your errand boy services from Main Market Onitsha. Please let me know your availability and rates.`;
-            const whatsappUrl = `https://wa.me/${phone.replace('+', '')}?text=${encodeURIComponent(message)}`;
-            window.open(whatsappUrl, '_blank');
-        }
-
-        function sendNewProductNotification(product, productId) {
-            const adminPhone = "2348064562826";
-            const message = `🆕 NEW PRODUCT UPLOADED!
-
-📦 Product: ${product.name}
-💰 Price: ₦${product.price.toLocaleString()}
-🏷️ Category: ${product.category}
-👨‍💼 Seller: ${product.sellerName}
-📧 Seller Email: ${product.sellerEmail}
-📞 Seller WhatsApp: ${product.sellerPhone}
-🆔 Product ID: ${productId}
-
-Buyers will call seller directly at: ${product.sellerPhone}`;
-
-            const whatsappUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
-            window.open(whatsappUrl, '_blank');
-        }
-
         // Enhanced functions with loading states
         async function loginUserWithLoading() {
             const email = document.getElementById('loginEmail').value;
@@ -3013,13 +2538,11 @@ Buyers will call seller directly at: ${product.sellerPhone}`;
                 const button = document.getElementById(buttonId);
                 if (!button) return;
                 
-                // Save original state
                 this.originalStates.set(buttonId, {
                     html: button.innerHTML,
                     disabled: button.disabled
                 });
                 
-                // Apply loading state
                 button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
                 button.disabled = true;
             },
@@ -3035,11 +2558,6 @@ Buyers will call seller directly at: ${product.sellerPhone}`;
                 }
             }
         };
-
-        // Google Sign-in
-        function initializeGoogleAuth() {
-            // Google auth implementation would go here
-        }
 
         // Toast Notification
         function showToast(message, type = 'success') {
